@@ -1,0 +1,22 @@
+Recomendação — Objetivo: {{ objective }}
+
+Estratégia vencedora: {{ winner_id }}
+Métrica alcançada: {{ winner_metric }}
+
+{% if runner_up_id is not none and runner_up_id %}
+Segunda colocada: {{ runner_up_id }}
+Diferença para a segunda colocada: {{ delta_vs_runner_up }}
+{% else %}
+Nenhuma outra estratégia foi comparada.
+{% endif %}
+
+{% if key_drivers %}
+Principais fatores identificados:
+{% for driver in key_drivers %}
+  - {{ key_driver_labels[driver.value] }} ({{ driver.value }})
+{% endfor %}
+{% else %}
+Nenhum fator específico identificado.
+{% endif %}
+
+AVISO: Este sistema é um simulador educacional. Não constitui assessoria financeira.
