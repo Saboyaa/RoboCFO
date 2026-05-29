@@ -8,5 +8,5 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 test('renders disclaimer', () => {
   render(<App />, { wrapper })
-  expect(screen.getByText(/simulador educacional/i)).toBeInTheDocument()
+  expect(screen.getByText(/aviso legal/i)).toBeInTheDocument()
 })

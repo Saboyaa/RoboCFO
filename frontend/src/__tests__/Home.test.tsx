@@ -13,11 +13,11 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 test("renders disclaimer on home page", () => {
   render(<Home />, { wrapper });
-  expect(screen.getByText(/simulador educacional/i)).toBeInTheDocument();
+  expect(screen.getByText(/aviso legal/i)).toBeInTheDocument();
 });
 
 test("renders simulation form", () => {
   render(<Home />, { wrapper });
-  expect(screen.getByRole("button", { name: /simular/i })).toBeInTheDocument();
-  expect(screen.getByLabelText(/anos de simulação/i)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /simular agora/i })).toBeInTheDocument();
+  expect(screen.getByText(/horizonte de simulação/i)).toBeInTheDocument();
 });

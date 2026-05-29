@@ -17,16 +17,38 @@ export default function ExplanationCard({ explanation, templateText }: Props) {
   }
 
   return (
-    <div style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: 16, marginBottom: 16 }}>
-      <p style={{ margin: "0 0 12px 0" }}>{templateText}</p>
+    <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-5">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 text-xl">🤖</span>
+        <p className="text-sm leading-relaxed text-slate-300">{templateText}</p>
+      </div>
+
       {!expanded && (
-        <button onClick={handleExplain} style={{ cursor: "pointer" }}>
-          Explicar mais
+        <button
+          onClick={handleExplain}
+          className="mt-4 flex items-center gap-2 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/20"
+        >
+          <span>✨</span> Explicar mais com IA
         </button>
       )}
-      {isPending && <p style={{ color: "#64748b" }}>Carregando explicação…</p>}
-      {isError && <p style={{ color: "#dc2626" }}>Serviço indisponível</p>}
-      {data && <p style={{ marginTop: 12, background: "#f8fafc", padding: 12, borderRadius: 4 }}>{data.text}</p>}
+
+      {isPending && (
+        <div className="mt-4 flex items-center gap-2 text-sm text-slate-400">
+          <span className="animate-spin">⏳</span> Gerando explicação…
+        </div>
+      )}
+
+      {isError && (
+        <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          Serviço indisponível. Verifique a configuração do LLM_PROVIDER.
+        </div>
+      )}
+
+      {data && (
+        <div className="mt-4 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-sm leading-relaxed text-slate-300">
+          {data.text}
+        </div>
+      )}
     </div>
   );
 }
