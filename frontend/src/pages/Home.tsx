@@ -83,9 +83,9 @@ function buildState(p: Profile, years: number) {
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-function NumInput({ label, value, onChange, prefix = "R$", min = 0, step = 1000, hint }: {
+function NumInput({ label, value, onChange, prefix = "R$", min = 0, hint }: {
   label: string; value: number; onChange: (v: number) => void;
-  prefix?: string; min?: number; step?: number; hint?: string;
+  prefix?: string; min?: number; hint?: string;
 }) {
   return (
     <div>
@@ -95,8 +95,8 @@ function NumInput({ label, value, onChange, prefix = "R$", min = 0, step = 1000,
           <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs text-slate-500">{prefix}</span>
         )}
         <input
-          type="number" min={min} step={step} value={value}
-          onChange={e => onChange(Number(e.target.value))}
+          type="number" min={min} step="any" value={value}
+          onChange={e => onChange(e.target.value === "" ? 0 : Number(e.target.value))}
           className={`w-full rounded-lg border border-slate-700 bg-slate-900 py-2 text-sm text-white focus:border-blue-500 focus:outline-none ${prefix ? "pl-8 pr-3" : "px-3"}`}
         />
       </div>
@@ -105,14 +105,36 @@ function NumInput({ label, value, onChange, prefix = "R$", min = 0, step = 1000,
   );
 }
 
+const STORAGE_KEY = "robo-cfo-profile-v1";
+
+function loadProfile(): Profile {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : DEFAULTS;
+  } catch {
+    return DEFAULTS;
+  }
+}
+
 export default function Home() {
-  const [years, setYears] = useState(30);
-  const [profile, setProfile] = useState<Profile>(DEFAULTS);
+  const [years, setYears] = useState(() => Number(localStorage.getItem("robo-cfo-years") || 30));
+  const [profile, setProfile] = useState<Profile>(loadProfile);
   const [showEdit, setShowEdit] = useState(false);
   const navigate = useNavigate();
   const { mutate, isPending, isError } = useOptimize();
 
-  const set = (k: keyof Profile) => (v: number) => setProfile(p => ({ ...p, [k]: v }));
+  function set(k: keyof Profile) {
+    return (v: number) => setProfile(p => {
+      const next = { ...p, [k]: v };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function handleYears(v: number) {
+    setYears(v);
+    localStorage.setItem("robo-cfo-years", String(v));
+  }
 
   const totalInvestments = profile.stocks + profile.fixedIncome + profile.exemptFixedIncome + profile.fii + profile.savings;
   const monthlySavings = profile.monthlyIncome - profile.monthlyExpenses - (profile.debtBalance > 0 ? profile.debtMinPayment : 0);
@@ -190,9 +212,9 @@ export default function Home() {
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Perfil</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <NumInput label="Idade atual" value={profile.age} onChange={set("age")} prefix="" step={1} min={18} />
-                  <NumInput label="Idade de aposentadoria" value={profile.retirementAge} onChange={set("retirementAge")} prefix="" step={1} min={40} />
-                  <NumInput label="Meta de aposentadoria" value={profile.retirementGoal} onChange={set("retirementGoal")} step={50000} />
+                  <NumInput label="Idade atual" value={profile.age} onChange={set("age")} prefix="" min={18} />
+                  <NumInput label="Idade de aposentadoria" value={profile.retirementAge} onChange={set("retirementAge")} prefix="" min={40} />
+                  <NumInput label="Meta de aposentadoria" value={profile.retirementGoal} onChange={set("retirementGoal")} />
                 </div>
               </div>
 
@@ -200,8 +222,8 @@ export default function Home() {
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Fluxo de caixa</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <NumInput label="Renda mensal bruta" value={profile.monthlyIncome} onChange={set("monthlyIncome")} step={500} />
-                  <NumInput label="Gastos mensais" value={profile.monthlyExpenses} onChange={set("monthlyExpenses")} step={500} />
+                  <NumInput label="Renda mensal bruta" value={profile.monthlyIncome} onChange={set("monthlyIncome")} />
+                  <NumInput label="Gastos mensais" value={profile.monthlyExpenses} onChange={set("monthlyExpenses")} />
                 </div>
               </div>
 
@@ -209,11 +231,11 @@ export default function Home() {
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Patrimônio investido</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <NumInput label="Ações / ETFs" value={profile.stocks} onChange={set("stocks")} step={5000} hint="15% ganho, isento ≤R$20k/mês" />
-                  <NumInput label="Renda fixa (CDB, Tesouro)" value={profile.fixedIncome} onChange={set("fixedIncome")} step={5000} hint="Tabela regressiva 22,5%→15%" />
-                  <NumInput label="LCI / LCA / CRI / CRA" value={profile.exemptFixedIncome} onChange={set("exemptFixedIncome")} step={5000} hint="Isento de IR" />
-                  <NumInput label="FII" value={profile.fii} onChange={set("fii")} step={5000} hint="20% sobre ganho de capital" />
-                  <NumInput label="Poupança" value={profile.savings} onChange={set("savings")} step={1000} hint="Isenta" />
+                  <NumInput label="Ações / ETFs" value={profile.stocks} onChange={set("stocks")} hint="15% ganho, isento ≤R$20k/mês" />
+                  <NumInput label="Renda fixa (CDB, Tesouro)" value={profile.fixedIncome} onChange={set("fixedIncome")} hint="Tabela regressiva 22,5%→15%" />
+                  <NumInput label="LCI / LCA / CRI / CRA" value={profile.exemptFixedIncome} onChange={set("exemptFixedIncome")} hint="Isento de IR" />
+                  <NumInput label="FII" value={profile.fii} onChange={set("fii")} hint="20% sobre ganho de capital" />
+                  <NumInput label="Poupança" value={profile.savings} onChange={set("savings")} hint="Isenta" />
                 </div>
               </div>
 
@@ -221,9 +243,9 @@ export default function Home() {
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Dívidas</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <NumInput label="Saldo devedor" value={profile.debtBalance} onChange={set("debtBalance")} step={1000} />
-                  <NumInput label="Taxa anual (%)" value={profile.debtRate} onChange={set("debtRate")} prefix="%" step={0.5} min={0} />
-                  <NumInput label="Parcela mínima/mês" value={profile.debtMinPayment} onChange={set("debtMinPayment")} step={100} />
+                  <NumInput label="Saldo devedor" value={profile.debtBalance} onChange={set("debtBalance")} />
+                  <NumInput label="Taxa anual (%)" value={profile.debtRate} onChange={set("debtRate")} prefix="%" min={0} />
+                  <NumInput label="Parcela mínima/mês" value={profile.debtMinPayment} onChange={set("debtMinPayment")} />
                 </div>
               </div>
             </div>
@@ -239,7 +261,7 @@ export default function Home() {
               </div>
               <input
                 type="range" min={5} max={50} value={years}
-                onChange={e => setYears(Number(e.target.value))}
+                onChange={e => handleYears(Number(e.target.value))}
                 className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 accent-blue-500"
               />
             </div>
