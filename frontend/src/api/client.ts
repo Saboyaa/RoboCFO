@@ -81,17 +81,17 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function mockSimulate(_vars: { years: number }): Promise<SimulationResult> {
+async function mockSimulate(_: { years: number }): Promise<SimulationResult> {
   await delay(300);
   return MOCK_SIMULATION_RESULT;
 }
 
-async function mockOptimize(_vars: { years: number }): Promise<Recommendation> {
+async function mockOptimize(_: { years: number }): Promise<Recommendation> {
   await delay(500);
   return MOCK_RECOMMENDATION;
 }
 
-async function mockExplain(_req: ExplainRequest): Promise<ExplainResponse> {
+async function mockExplain(_: ExplainRequest): Promise<ExplainResponse> {
   await delay(800);
   return {
     text:

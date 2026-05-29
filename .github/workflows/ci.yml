@@ -11,10 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
-        with:
-          python-version: "3.12"
       - working-directory: backend
         run: |
+          uv python install 3.12
           uv sync --extra dev
           uv run ruff check .
           uv run mypy app/
@@ -25,14 +24,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
-        with:
-          python-version: "3.12"
       - working-directory: backend
         run: |
+          uv python install 3.12
           uv sync --extra dev
           uv run pytest --cov=app --cov-fail-under=80 tests/
         env:
-          # LLM tests are skipped gracefully when key is absent
           LLM_PROVIDER: none
 
   frontend-lint:
