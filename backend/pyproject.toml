@@ -10,7 +10,9 @@ dependencies = [
     "jinja2>=3.1",
     "anthropic>=0.28",
     "openai>=1.35",
+    "python-dotenv>=1.0",
     "numpy>=2.0",
+    "httpx2>=2.2.0",
 ]
 
 [project.optional-dependencies]
@@ -41,6 +43,7 @@ testpaths = ["tests"]
 addopts = "-v"
 # Repo root on path so `import contracts` resolves from backend/
 pythonpath = [".", ".."]
+anyio_mode = "auto"
 
 [tool.coverage.run]
 source = ["app"]
