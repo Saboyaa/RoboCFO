@@ -99,3 +99,35 @@ def test_total_tax_invariant_holds_in_simulation(state, assumptions, config, tab
         + result.irpfm_additional
     )
     assert result.total_tax == pytest.approx(expected, abs=0.01)
+
+
+def test_high_interest_debt_makes_debt_first_win(state, assumptions, tables):
+    """With a very high debt interest rate, paying debt first must beat investing."""
+    from contracts import Debt, SimulationConfig
+    import dataclasses
+
+    # Replace the vehicle debt with a 60% annual-rate debt — clearly predatory
+    expensive_debt = Debt(
+        id="expensive", name="Dívida cara", balance=35_000.0,
+        annual_interest_rate=0.60, minimum_payment=900.0,
+    )
+    expensive_state = dataclasses.replace(state, debts=(expensive_debt,))
+    config = SimulationConfig(years=20, n_paths=500, seed=7)
+
+    from app.optimizer.strategies import BUILTIN_STRATEGIES
+    from contracts import Objective
+
+    recommendation = optimize(
+        state=expensive_state,
+        candidates=list(BUILTIN_STRATEGIES),
+        objective=Objective.MAX_MEDIAN_NET_WORTH,
+        assumptions=assumptions,
+        config=config,
+        tax_fn=compute_annual_tax,
+        tax_tables_by_year=tables,
+    )
+
+    winner_id = recommendation.ranked[0].strategy.id
+    assert winner_id == "debt_first", (
+        f"With 60% debt interest, debt_first must win — got {winner_id}"
+    )

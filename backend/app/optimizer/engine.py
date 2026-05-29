@@ -42,20 +42,34 @@ except ImportError:  # pragma: no cover
 def _apply_strategy(state: FinancialState, strategy_id: str) -> FinancialState:
     """Return a modified FinancialState reflecting the strategy's allocation logic.
 
-    Each strategy changes how the annual surplus is split between extra debt
-    payoff and new investment. We model this by:
-      - debt_first: pay off all debt immediately from holdings; after that,
-        freed minimum payments compound as additional savings.
-      - invest_fixed / invest_variable: keep debt, add annual interest cost
-        as an additional expense (debt drag).
-      - balanced: pay half the debt from holdings, half the interest drags.
-      - tax_efficient_redemption: same as invest_fixed with slight tax benefit.
+    The simulation subtracts minimum debt payments from savings automatically
+    (via run_simulation). What it does NOT model is the NET INTEREST DRAG:
+    when annual_interest > annual_min_payments the debt grows, costing extra
+    wealth every year beyond what the minimum payment covers.
+
+    net_drag = max(0, annual_interest - annual_min_payments)
+
+    We add this to annual_expenses for strategies that keep the debt, so the
+    simulation correctly penalises high-rate debt that isn't being paid down.
+
+    debt_first: liquidate holdings to clear debt on day 0; no more service
+                after that — run_simulation sees debts=() and annual savings
+                automatically increases by the freed minimum payments.
+    balanced:   pay off half; model half the remaining drag.
+    invest_variable / tax_efficient_redemption / invest_fixed: keep debt,
+                add net_drag as extra expense.
     """
     total_debt = sum(d.balance for d in state.debts)
     total_holdings = sum(h.balance for h in state.holdings)
 
     if total_debt <= 0.0:
-        return state  # nothing to differentiate
+        return state
+
+    annual_interest = sum(d.balance * d.annual_interest_rate for d in state.debts)
+    annual_min_payments = sum(d.minimum_payment * 12 for d in state.debts)
+    # Net drag: the part of interest NOT covered by minimum payments.
+    # When this is positive the debt is growing and eroding wealth.
+    net_drag = max(0.0, annual_interest - annual_min_payments)
 
     def _scale_holdings(fraction: float) -> tuple[Holding, ...]:
         return tuple(
@@ -64,49 +78,53 @@ def _apply_strategy(state: FinancialState, strategy_id: str) -> FinancialState:
         )
 
     if strategy_id == "debt_first":
-        # Liquidate holdings to pay off the full debt immediately.
-        # After that: no more minimum payments → net savings increases.
-        remaining_holdings = max(0.0, total_holdings - total_debt)
-        fraction = remaining_holdings / total_holdings if total_holdings > 0 else 0.0
-        new_holdings = _scale_holdings(fraction)
-        # Remove debts and their minimum payments (freed cash already in savings)
-        return dataclasses.replace(state, holdings=new_holdings, debts=())
+        # Pay off all debt from holdings on day 0.
+        # debts=() → run_simulation adds back the min payments to savings.
+        remaining = max(0.0, total_holdings - total_debt)
+        fraction = remaining / total_holdings if total_holdings > 0 else 0.0
+        return dataclasses.replace(state, holdings=_scale_holdings(fraction), debts=())
 
     if strategy_id == "balanced":
-        # Pay off 50% of the debt; keep 50% draining as interest.
+        # Pay off 50 % of debt from holdings; keep 50 % with proportional drag.
         partial_pay = total_debt * 0.5
-        remaining_holdings = max(0.0, total_holdings - partial_pay)
-        fraction = remaining_holdings / total_holdings if total_holdings > 0 else 0.0
-        new_holdings = _scale_holdings(fraction)
-        # Keep half the debt, half the interest cost
+        remaining = max(0.0, total_holdings - partial_pay)
+        fraction = remaining / total_holdings if total_holdings > 0 else 0.0
         half_debts = tuple(
-            dataclasses.replace(d, balance=d.balance * 0.5)
-            for d in state.debts
+            dataclasses.replace(d, balance=d.balance * 0.5) for d in state.debts
         )
-        return dataclasses.replace(state, holdings=new_holdings, debts=half_debts)
+        half_drag = net_drag * 0.5
+        return dataclasses.replace(
+            state,
+            holdings=_scale_holdings(fraction),
+            debts=half_debts,
+            annual_expenses=state.annual_expenses + half_drag,
+        )
 
     if strategy_id == "invest_variable":
-        # Same debt drag as invest_fixed but boost equity allocation/return
-        # by shifting all holdings to STOCKS assumptions.
+        # Keep debt (full drag) + shift non-exempt holdings to stocks for
+        # higher expected return / volatility.
         boosted = tuple(
             dataclasses.replace(h, asset_class=AssetClass.STOCKS)
             if h.asset_class not in (AssetClass.EXEMPT_FIXED_INCOME, AssetClass.SAVINGS)
             else h
             for h in state.holdings
         )
-        return dataclasses.replace(state, holdings=boosted)
-
-    if strategy_id == "tax_efficient_redemption":
-        # Invest normally but model a 10% reduction in annual expenses from
-        # tax efficiency (better holding periods → lower regressive rate).
-        tax_saving = state.annual_expenses * 0.05
         return dataclasses.replace(
-            state, annual_expenses=max(0.0, state.annual_expenses - tax_saving)
+            state, holdings=boosted, annual_expenses=state.annual_expenses + net_drag
         )
 
-    # invest_fixed and any unknown id: keep debt, pay only minimum (already
-    # subtracted in run_simulation), let interest erode real wealth.
-    return state
+    if strategy_id == "tax_efficient_redemption":
+        # Keep debt, model ~5 % reduction in expenses from tax optimisation.
+        tax_saving = state.annual_expenses * 0.05
+        return dataclasses.replace(
+            state,
+            annual_expenses=max(0.0, state.annual_expenses - tax_saving + net_drag),
+        )
+
+    # invest_fixed (and any unrecognised id): keep debt, add full net drag.
+    return dataclasses.replace(
+        state, annual_expenses=state.annual_expenses + net_drag
+    )
 
 
 # ---------------------------------------------------------------------------
