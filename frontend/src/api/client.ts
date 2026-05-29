@@ -92,7 +92,7 @@ export type OptimizePayload = {
   candidates: unknown[];
   objective: string;
   assumptions: unknown;
-  config: { years: number; n_paths: number; seed: number };
+  config: { years: number; n_paths: number; seed: number | null };
 };
 
 async function fetchOptimize(payload: OptimizePayload): Promise<Recommendation> {

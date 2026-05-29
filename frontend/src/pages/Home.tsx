@@ -8,6 +8,7 @@ export interface ResultsState {
   recommendation: Recommendation;
   simulation: SimulationResult;
   years: number;
+  profile: Profile;
 }
 
 const ASSUMPTIONS = {
@@ -147,12 +148,12 @@ export default function Home() {
         candidates: [],
         objective: "max_median_net_worth",
         assumptions: ASSUMPTIONS,
-        config: { years, n_paths: 1000, seed: 42 },
+        config: { years, n_paths: 1000, seed: null },
       },
       {
         onSuccess: (recommendation) => {
           const simulation = recommendation.ranked[0].result;
-          navigate("/results", { state: { recommendation, simulation, years } satisfies ResultsState });
+          navigate("/results", { state: { recommendation, simulation, years, profile } satisfies ResultsState });
         },
       },
     );
