@@ -1,9 +1,8 @@
 """T9: Tests for BUILTIN_STRATEGIES catalogue and build_custom_strategy."""
-import pytest
 
-from app.optimizer.strategies import BUILTIN_STRATEGIES, build_custom_strategy
 from contracts import AssetClass, Strategy
 
+from app.optimizer.strategies import BUILTIN_STRATEGIES, build_custom_strategy
 
 EXPECTED_NAMES = {
     "Quitar dívidas de alto custo primeiro",
