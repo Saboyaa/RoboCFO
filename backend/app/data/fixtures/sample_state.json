@@ -1,0 +1,97 @@
+{
+  "_comment": "Synthetic FinancialState for a 35-year-old Brazilian professional. Not real data.",
+  "taxpayer": {
+    "age": 35,
+    "retirement_age": 65,
+    "dependents": 1,
+    "state": "SP"
+  },
+  "base_year": 2026,
+  "holdings": [
+    {
+      "id": "stocks-01",
+      "name": "Carteira de Ações (IBOV)",
+      "asset_class": "stocks",
+      "balance": 80000.00,
+      "cost_basis": 60000.00,
+      "acquisition_year": 2022
+    },
+    {
+      "id": "cdb-01",
+      "name": "CDB Banco XYZ — 120% CDI",
+      "asset_class": "taxable_fixed_income",
+      "balance": 50000.00,
+      "cost_basis": 45000.00,
+      "acquisition_year": 2023
+    },
+    {
+      "id": "lci-01",
+      "name": "LCI Banco ABC — 95% CDI",
+      "asset_class": "exempt_fixed_income",
+      "balance": 30000.00,
+      "cost_basis": 28000.00,
+      "acquisition_year": 2024
+    },
+    {
+      "id": "fii-01",
+      "name": "FII Logística (XPLG11)",
+      "asset_class": "fii",
+      "balance": 25000.00,
+      "cost_basis": 22000.00,
+      "acquisition_year": 2023
+    },
+    {
+      "id": "poupanca-01",
+      "name": "Poupança reserva emergência",
+      "asset_class": "savings",
+      "balance": 15000.00,
+      "cost_basis": 15000.00,
+      "acquisition_year": 2024
+    }
+  ],
+  "debts": [
+    {
+      "id": "financ-01",
+      "name": "Financiamento Veículo",
+      "balance": 35000.00,
+      "annual_interest_rate": 0.18,
+      "minimum_payment": 900.00
+    }
+  ],
+  "incomes": [
+    {
+      "id": "salary-01",
+      "name": "Salário CLT",
+      "monthly_amount": 12000.00,
+      "kind": "salary",
+      "start_year": 2026,
+      "end_year": null
+    },
+    {
+      "id": "fii-dist-01",
+      "name": "Rendimentos FII",
+      "monthly_amount": 200.00,
+      "kind": "exempt",
+      "start_year": 2026,
+      "end_year": null
+    }
+  ],
+  "goals": [
+    {
+      "id": "retirement-01",
+      "name": "Aposentadoria",
+      "kind": "retirement",
+      "target_amount": 3000000.00,
+      "target_year": 2056
+    },
+    {
+      "id": "emergency-01",
+      "name": "Reserva de emergência (6 meses)",
+      "kind": "emergency_fund",
+      "target_amount": 72000.00,
+      "target_year": 2026
+    }
+  ],
+  "annual_expenses": 84000.00,
+  "deductible_expenses_annual": 8400.00
+}

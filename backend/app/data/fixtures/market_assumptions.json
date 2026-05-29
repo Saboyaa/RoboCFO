@@ -1,0 +1,29 @@
+{
+  "_comment": "Default MarketAssumptions with per-asset-class overrides for the dev fixture.",
+  "mean_real_return": 0.05,
+  "return_volatility": 0.12,
+  "ipca_mean": 0.04,
+  "ipca_volatility": 0.015,
+  "per_class": [
+    {
+      "asset_class": "stocks",
+      "mean_real_return": 0.07,
+      "return_volatility": 0.20
+    },
+    {
+      "asset_class": "taxable_fixed_income",
+      "mean_real_return": 0.04,
+      "return_volatility": 0.01
+    },
+    {
+      "asset_class": "exempt_fixed_income",
+      "mean_real_return": 0.04,
+      "return_volatility": 0.01
+    },
+    {
+      "asset_class": "fii",
+      "mean_real_return": 0.06,
+      "return_volatility": 0.15
+    }
+  ]
+}
