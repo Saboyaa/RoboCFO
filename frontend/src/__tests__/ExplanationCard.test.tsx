@@ -26,5 +26,5 @@ test("renders Explicar mais button", () => {
     />,
     { wrapper },
   );
-  expect(screen.getByRole("button", { name: /explicar mais/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /elaborar/i })).toBeInTheDocument();
 });

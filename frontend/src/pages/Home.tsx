@@ -140,7 +140,9 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-slate-950">
       <header className="border-b border-slate-800 px-6 py-4">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <span className="text-2xl">📊</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+            <svg className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+          </div>
           <div>
             <h1 className="text-lg font-bold text-white">Robo-CFO</h1>
             <p className="text-xs text-slate-500">Simulador educacional · Brasil</p>
@@ -178,8 +180,8 @@ export default function Home() {
             onClick={() => setShowEdit(v => !v)}
             className="flex w-full items-center justify-between rounded-xl border border-slate-700/60 bg-slate-800/40 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800"
           >
-            <span>✏️ {showEdit ? "Ocultar dados financeiros" : "Editar dados financeiros"}</span>
-            <span className="text-slate-500">{showEdit ? "▲" : "▼"}</span>
+            <span className="font-medium">{showEdit ? "Ocultar dados financeiros" : "Editar dados financeiros"}</span>
+            <svg className={`h-4 w-4 text-slate-500 transition-transform ${showEdit ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
           </button>
 
           {showEdit && (
