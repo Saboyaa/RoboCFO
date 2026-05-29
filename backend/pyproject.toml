@@ -34,10 +34,13 @@ ignore = ["E501"]
 python_version = "3.12"
 strict = true
 ignore_missing_imports = true
+mypy_path = ".."
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
+# Repo root on path so `import contracts` resolves from backend/
+pythonpath = [".", ".."]
 
 [tool.coverage.run]
 source = ["app"]

@@ -1,0 +1,46 @@
+{
+  "year": 2026,
+  "_comment": "Sources: Lei 15.270/2025, Instrução Normativa RFB 2.175/2023, tabela progressiva 2024.",
+
+  "irpf_monthly_brackets": [
+    {"lower_bound": 0.00,    "rate": 0.000, "deduction": 0.00},
+    {"lower_bound": 2259.21, "rate": 0.075, "deduction": 169.44},
+    {"lower_bound": 2826.66, "rate": 0.150, "deduction": 381.44},
+    {"lower_bound": 3751.06, "rate": 0.225, "deduction": 662.77},
+    {"lower_bound": 4664.69, "rate": 0.275, "deduction": 896.00}
+  ],
+
+  "irpf_annual_brackets": [
+    {"lower_bound": 0.00,      "rate": 0.000, "deduction": 0.00},
+    {"lower_bound": 27110.41,  "rate": 0.075, "deduction": 2033.28},
+    {"lower_bound": 33919.81,  "rate": 0.150, "deduction": 4577.28},
+    {"lower_bound": 45012.61,  "rate": 0.225, "deduction": 7953.36},
+    {"lower_bound": 55976.17,  "rate": 0.275, "deduction": 10752.00}
+  ],
+
+  "irpf_exemption_limit_monthly": 5000.00,
+  "irpf_reduction_upper_limit_monthly": 7350.00,
+  "dependent_deduction_annual": 2275.08,
+  "simplified_discount_cap_annual": 16754.34,
+
+  "equity_monthly_exemption": 20000.00,
+  "equity_swing_rate": 0.15,
+  "equity_day_trade_rate": 0.20,
+  "fii_rate": 0.20,
+
+  "regressive_bands": [
+    {"max_days": 180,  "rate": 0.225},
+    {"max_days": 360,  "rate": 0.200},
+    {"max_days": 720,  "rate": 0.175},
+    {"max_days": null, "rate": 0.150}
+  ],
+
+  "come_cotas_rate": 0.15,
+  "equity_fund_rate": 0.15,
+
+  "dividend_monthly_threshold_per_source": 50000.00,
+  "dividend_withholding_rate": 0.10,
+  "irpfm_income_floor_annual": 600000.00,
+  "irpfm_income_ceiling_annual": 1200000.00,
+  "irpfm_max_rate": 0.10
+}
