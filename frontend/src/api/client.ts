@@ -74,53 +74,47 @@ export const MOCK_RECOMMENDATION: Recommendation = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Mock API functions (replace with real fetch once backend is ready)
+// Real API calls
 // ---------------------------------------------------------------------------
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  return res.json() as Promise<T>;
 }
 
-async function mockSimulate(_: { years: number }): Promise<SimulationResult> {
-  await delay(300);
-  return MOCK_SIMULATION_RESULT;
+export type OptimizePayload = {
+  state: unknown;
+  candidates: unknown[];
+  objective: string;
+  assumptions: unknown;
+  config: { years: number; n_paths: number; seed: number };
+};
+
+async function fetchOptimize(payload: OptimizePayload): Promise<Recommendation> {
+  return apiPost<Recommendation>("/optimize", payload);
 }
 
-async function mockOptimize(_: { years: number }): Promise<Recommendation> {
-  await delay(500);
-  return MOCK_RECOMMENDATION;
-}
-
-async function mockExplain(_: ExplainRequest): Promise<ExplainResponse> {
-  await delay(800);
-  return {
-    text:
-      "A estratégia vencedora, 'Investir primeiro (renda fixa)', supera as demais em " +
-      "R$ 150.000 no patrimônio mediano ao final do período. Os principais fatores são a " +
-      "eficiência fiscal dos investimentos em renda fixa com prazos superiores a 720 dias " +
-      "(alíquota de 15%) e a diversificação da carteira, que reduz o risco de sequência de retornos. " +
-      "Consulte um profissional habilitado antes de tomar decisões financeiras.",
-  };
+async function fetchExplain(req: ExplainRequest): Promise<ExplainResponse> {
+  return apiPost<ExplainResponse>("/optimize/explain", req);
 }
 
 // ---------------------------------------------------------------------------
 // TanStack Query hooks
 // ---------------------------------------------------------------------------
 
-export function useSimulate() {
-  return useMutation<SimulationResult, Error, { years: number }>({
-    mutationFn: mockSimulate,
-  });
-}
-
 export function useOptimize() {
-  return useMutation<Recommendation, Error, { years: number }>({
-    mutationFn: mockOptimize,
+  return useMutation<Recommendation, Error, OptimizePayload>({
+    mutationFn: fetchOptimize,
   });
 }
 
 export function useExplain() {
   return useMutation<ExplainResponse, Error, ExplainRequest>({
-    mutationFn: mockExplain,
+    mutationFn: fetchExplain,
   });
 }

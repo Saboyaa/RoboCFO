@@ -153,14 +153,14 @@ def run_simulation(
     wealth = np.empty((n_paths, years), dtype=np.float64)
     current_wealth = np.full(n_paths, initial_wealth, dtype=np.float64)
 
-    # Annual net savings = total income - annual expenses
-    # (before tax; tax_fn deducts taxes separately)
+    # Annual net savings = income - lifestyle expenses - minimum debt service
     annual_income = sum(
         inc.monthly_amount * 12
         for inc in state.incomes
         if inc.start_year <= base_year
     )
-    annual_net_savings = annual_income - state.annual_expenses
+    annual_min_debt_service = sum(d.minimum_payment * 12 for d in state.debts)
+    annual_net_savings = annual_income - state.annual_expenses - annual_min_debt_service
 
     for y in range(years):
         year = base_year + y + 1

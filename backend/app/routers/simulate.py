@@ -1,12 +1,21 @@
-"""POST /simulate endpoint — T13.
-
-Stub implementation: accepts a valid-shaped body, returns a hardcoded but
-valid-shaped SimulationResult.  The real Monte Carlo engine will replace
-the stub call in a later task.
-"""
+"""POST /simulate endpoint."""
 from __future__ import annotations
 
-from contracts import AssetClass, GoalKind, IncomeKind
+from contracts import (
+    AssetClass,
+    AssetClassAssumptions,
+    Debt,
+    FinancialState,
+    Goal,
+    GoalKind,
+    Holding,
+    IncomeKind,
+    IncomeStream,
+    MarketAssumptions,
+    SimulationConfig,
+    SimulationResult,
+    Taxpayer,
+)
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -118,35 +127,112 @@ class SimulationResultOut(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Conversion helpers: Pydantic In → contracts dataclasses
+# ---------------------------------------------------------------------------
+
+
+def _to_financial_state(s: FinancialStateIn) -> FinancialState:
+    return FinancialState(
+        taxpayer=Taxpayer(
+            age=s.taxpayer.age,
+            retirement_age=s.taxpayer.retirement_age,
+            dependents=s.taxpayer.dependents,
+            state=s.taxpayer.state,
+        ),
+        base_year=s.base_year,
+        holdings=tuple(
+            Holding(
+                id=h.id, name=h.name, asset_class=h.asset_class,
+                balance=h.balance, cost_basis=h.cost_basis,
+                acquisition_year=h.acquisition_year,
+            )
+            for h in s.holdings
+        ),
+        debts=tuple(
+            Debt(
+                id=d.id, name=d.name, balance=d.balance,
+                annual_interest_rate=d.annual_interest_rate,
+                minimum_payment=d.minimum_payment,
+            )
+            for d in s.debts
+        ),
+        incomes=tuple(
+            IncomeStream(
+                id=i.id, name=i.name, monthly_amount=i.monthly_amount,
+                kind=i.kind, start_year=i.start_year, end_year=i.end_year,
+            )
+            for i in s.incomes
+        ),
+        goals=tuple(
+            Goal(
+                id=g.id, name=g.name, kind=g.kind,
+                target_amount=g.target_amount, target_year=g.target_year,
+            )
+            for g in s.goals
+        ),
+        annual_expenses=s.annual_expenses,
+        deductible_expenses_annual=s.deductible_expenses_annual,
+    )
+
+
+def _to_market_assumptions(a: MarketAssumptionsIn) -> MarketAssumptions:
+    return MarketAssumptions(
+        mean_real_return=a.mean_real_return,
+        return_volatility=a.return_volatility,
+        ipca_mean=a.ipca_mean,
+        ipca_volatility=a.ipca_volatility,
+        per_class=tuple(
+            AssetClassAssumptions(
+                asset_class=pc.asset_class,
+                mean_real_return=pc.mean_real_return,
+                return_volatility=pc.return_volatility,
+            )
+            for pc in a.per_class
+        ),
+    )
+
+
+def _to_sim_config(c: SimulationConfigIn) -> SimulationConfig:
+    return SimulationConfig(years=c.years, n_paths=c.n_paths, seed=c.seed)
+
+
+def _result_out(r: SimulationResult) -> SimulationResultOut:
+    return SimulationResultOut(
+        success_probability=r.success_probability,
+        terminal_p10=r.terminal_p10,
+        terminal_p50=r.terminal_p50,
+        terminal_p90=r.terminal_p90,
+        by_year=[
+            YearPercentilesOut(year=yp.year, p10=yp.p10, p50=yp.p50, p90=yp.p90)
+            for yp in r.by_year
+        ],
+        paths_simulated=r.paths_simulated,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Endpoint
 # ---------------------------------------------------------------------------
 
 
 @router.post("/simulate", response_model=SimulationResultOut)
 async def simulate(body: SimulateRequest) -> SimulationResultOut:
-    """Run a Monte Carlo simulation.
+    from app.data.loader import load_tax_tables
+    from app.simulation.monte_carlo import run_simulation
+    from app.tax.annual import compute_annual_tax
 
-    Currently stubbed — returns a hardcoded valid-shaped result.
-    """
-    base = body.state.base_year
-    years = body.config.years
-    by_year = [
-        YearPercentilesOut(
-            year=base + i,
-            p10=100_000.0 * (1 + i * 0.03),
-            p50=200_000.0 * (1 + i * 0.05),
-            p90=300_000.0 * (1 + i * 0.07),
-        )
-        for i in range(1, years + 1)
-    ]
-    return SimulationResultOut(
-        success_probability=0.75,
-        terminal_p10=by_year[-1].p10 if by_year else 0.0,
-        terminal_p50=by_year[-1].p50 if by_year else 0.0,
-        terminal_p90=by_year[-1].p90 if by_year else 0.0,
-        by_year=by_year,
-        paths_simulated=body.config.n_paths,
-    )
+    state = _to_financial_state(body.state)
+    assumptions = _to_market_assumptions(body.assumptions)
+    config = _to_sim_config(body.config)
+    tables = [load_tax_tables(state.base_year)]
+
+    result = run_simulation(state, assumptions, config, compute_annual_tax, tables)
+    return _result_out(result)
 
 
-__all__ = ["router", "FinancialStateIn", "MarketAssumptionsIn", "SimulationConfigIn"]
+__all__ = [
+    "router",
+    "FinancialStateIn", "MarketAssumptionsIn", "SimulationConfigIn",
+    "SimulationResultOut", "YearPercentilesOut",
+    "_to_financial_state", "_to_market_assumptions", "_to_sim_config", "_result_out",
+]

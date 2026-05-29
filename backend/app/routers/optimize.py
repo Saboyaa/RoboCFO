@@ -15,7 +15,6 @@ from .simulate import (
     MarketAssumptionsIn,
     SimulationConfigIn,
     SimulationResultOut,
-    YearPercentilesOut,
 )
 
 router = APIRouter()
@@ -78,59 +77,71 @@ class RecommendationOut(BaseModel):
 
 
 @router.post("/optimize", response_model=RecommendationOut)
-async def optimize(body: OptimizeRequest) -> RecommendationOut:
-    """Evaluate candidate strategies and return a ranked Recommendation.
+async def optimize_endpoint(body: OptimizeRequest) -> RecommendationOut:
+    """Evaluate candidate strategies via real Monte Carlo and return ranked Recommendation."""
+    from contracts import Strategy
 
-    Currently stubbed — returns a hardcoded valid-shaped result.
-    """
-    base = body.state.base_year
-    years = body.config.years
-    by_year = [
-        YearPercentilesOut(
-            year=base + i,
-            p10=100_000.0 * (1 + i * 0.03),
-            p50=200_000.0 * (1 + i * 0.05),
-            p90=300_000.0 * (1 + i * 0.07),
-        )
-        for i in range(1, years + 1)
-    ]
+    from app.data.loader import load_tax_tables
+    from app.optimizer.engine import optimize
+    from app.optimizer.strategies import BUILTIN_STRATEGIES
+    from app.tax.annual import compute_annual_tax
 
-    winner = body.candidates[0] if body.candidates else StrategyIn(
-        id="default", name="Default", description=""
-    )
-    runner_up = body.candidates[1] if len(body.candidates) > 1 else None
-
-    stub_result = SimulationResultOut(
-        success_probability=0.75,
-        terminal_p10=by_year[-1].p10 if by_year else 0.0,
-        terminal_p50=by_year[-1].p50 if by_year else 0.0,
-        terminal_p90=by_year[-1].p90 if by_year else 0.0,
-        by_year=by_year,
-        paths_simulated=body.config.n_paths,
+    from .simulate import (
+        _result_out,
+        _to_financial_state,
+        _to_market_assumptions,
+        _to_sim_config,
     )
 
-    ranked = [
-        StrategyOutcomeOut(
-            strategy=StrategyOut(**candidate.model_dump()),
-            result=stub_result,
-            lifetime_tax=50_000.0,
-        )
-        for candidate in body.candidates
-    ]
+    state = _to_financial_state(body.state)
+    assumptions = _to_market_assumptions(body.assumptions)
+    config = _to_sim_config(body.config)
+    tables = [load_tax_tables(state.base_year)]
 
-    explanation = ExplanationOut(
+    # Use provided candidates if given, otherwise run all built-in strategies
+    candidates: list[Strategy] = (
+        [Strategy(id=c.id, name=c.name, description=c.description) for c in body.candidates]
+        if body.candidates
+        else list(BUILTIN_STRATEGIES)
+    )
+
+    recommendation = optimize(
+        state=state,
+        candidates=candidates,
         objective=body.objective,
-        winner_id=winner.id,
-        winner_metric=stub_result.terminal_p50,
-        runner_up_id=runner_up.id if runner_up else None,
-        delta_vs_runner_up=0.0,
-        key_drivers=[KeyDriver.TAX_EFFICIENCY.value, KeyDriver.ASSET_ALLOCATION.value],
+        assumptions=assumptions,
+        config=config,
+        tax_fn=compute_annual_tax,
+        tax_tables_by_year=tables,
+    )
+
+    ranked_out = [
+        StrategyOutcomeOut(
+            strategy=StrategyOut(
+                id=o.strategy.id,
+                name=o.strategy.name,
+                description=o.strategy.description,
+            ),
+            result=_result_out(o.result),
+            lifetime_tax=o.lifetime_tax,
+        )
+        for o in recommendation.ranked
+    ]
+
+    exp = recommendation.explanation
+    explanation_out = ExplanationOut(
+        objective=exp.objective,
+        winner_id=exp.winner_id,
+        winner_metric=exp.winner_metric,
+        runner_up_id=exp.runner_up_id,
+        delta_vs_runner_up=exp.delta_vs_runner_up,
+        key_drivers=[kd.value for kd in exp.key_drivers],
     )
 
     return RecommendationOut(
-        objective=body.objective,
-        ranked=ranked,
-        explanation=explanation,
+        objective=recommendation.objective,
+        ranked=ranked_out,
+        explanation=explanation_out,
     )
 
 
